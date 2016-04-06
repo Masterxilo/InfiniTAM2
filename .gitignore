@@ -1,0 +1,7 @@
+﻿Files/Scenes/*
+Kinect/*
+x64/*
+*.suo
+*.sdf
+*.opensdf
+*.user
