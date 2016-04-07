@@ -1,4 +1,11 @@
-
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+#include <thrust/transform_reduce.h>
+#include <thrust/functional.h>
+using namespace thrust; 
+#include <float.h>
+#include <array>
 #include <gl/freeglut.h>
 #define NOMINMAX
 #define WINDOWS_LEAN_AND_MEAN
@@ -57,12 +64,65 @@ using namespace std;
 #define CPU_AND_GPU 
 #endif
 
-extern dim3 _lastLaunch_gridDim, _lastLaunch_blockDim;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #ifndef __CUDACC__
-// hack to make intellisense shut up
+// HACK to make intellisense shut up about illegal C++ <<< >>>
 #define LAUNCH_KERNEL(kernelFunction, gridDim, blockDim, arguments, ...) ((void)0)
 #else
+dim3 _lastLaunch_gridDim, _lastLaunch_blockDim;
 #define LAUNCH_KERNEL(kernelFunction, gridDim, blockDim, ...) {\
 cudaSafeCall(cudaGetLastError());\
 _lastLaunch_gridDim = dim3(gridDim); _lastLaunch_blockDim = dim3(blockDim);\
@@ -73,12 +133,120 @@ cudaSafeCall(cudaDeviceSynchronize()); /* TODO greatly alters the execution orde
 
 #endif
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #undef assert
 #if GPU_CODE
-#define assert(x,commentFormat,...) if(!(x)) {printf("%s(%i) : Assertion failed : %s.\n\tblockIdx %d %d %d, threadIdx %d %d %d\n\t<" commentFormat ">\n", __FILE__, __LINE__, #x, xyz(blockIdx), xyz(threadIdx), __VA_ARGS__); asm("trap;"); /* illegal instruction*/} 
+#define assert(x,commentFormat,...) if(!(x)) {printf("%s(%i) : Assertion failed : %s.\n\tblockIdx %d %d %d, threadIdx %d %d %d\n\t<" commentFormat ">\n", __FILE__, __LINE__, #x, xyz(blockIdx), xyz(threadIdx), __VA_ARGS__); *(int*)0 = 0;/* asm("trap;"); illegal instruction*/} 
 #else
 #define assert(x,commentFormat,...) if(!(x)) {char s[10000]; sprintf_s(s, "%s(%i) : Assertion failed : %s.\n\t<" commentFormat ">\n", __FILE__, __LINE__, #x, __VA_ARGS__); puts(s); flushStd(); DebugBreak(); OutputDebugStringA("! program continues after failed assertion\n\n");} 
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // Automatically wrap some functions in cudaSafeCall
@@ -88,6 +256,56 @@ cudaSafeCall(cudaDeviceSynchronize()); /* TODO greatly alters the execution orde
 #define cudaFree(...) cudaSafeCall(cudaFree(__VA_ARGS__))
 #define cudaMallocManaged(...) cudaSafeCall(cudaMallocManaged(__VA_ARGS__))
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // cudaSafeCall is an expression that evaluates to 
@@ -106,17 +324,172 @@ bool cudaSafeCallImpl(cudaError err, const char * const expr, const char * const
 #define cudaSafeCall(err) \
     !(cudaSafeCallImpl((cudaError)(err), #err, __FILE__, __LINE__) || ([]() {DebugBreak(); return true;})() )
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #define xyz(p) p.x, p.y, p.z
 #define xy(p) p.x, p.y
 #define threadIdx_xyz xyz(threadIdx)
 
-dim3 _lastLaunch_gridDim, _lastLaunch_blockDim;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #define stdouterrfile "stdouterr.txt"
 void redirectStd() {
     freopen(stdouterrfile, "w", stdout); // stdout > stdoutfile, 1>stdoutfile
     freopen(stdouterrfile, "w", stderr); // 2>stderrfile
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 struct _atinit {
     _atinit() {
@@ -125,6 +498,59 @@ struct _atinit {
         _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF);
     }
 } __atinit;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 struct _atexit {
     ~_atexit() {
@@ -140,6 +566,59 @@ struct _atexit {
     }
 } __atexit;
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 int fileExists(TCHAR * file)
 {
     WIN32_FIND_DATA FindFileData;
@@ -153,11 +632,117 @@ int fileExists(TCHAR * file)
     return found;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 std::string readFile(std::string fn) {
     std::ifstream t(fn);
     return std::string(std::istreambuf_iterator<char>(t),
         std::istreambuf_iterator<char>());
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void flushStd() {
     if (!fileExists(stdouterrfile)) return;
@@ -175,6 +760,59 @@ void flushStd() {
     remove(stdouterrfile);
     redirectStd();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /// \returns true if err is cudaSuccess
 /// Fills errmsg in UNIT_TESTING build.
@@ -214,6 +852,59 @@ bool cudaSafeCallImpl(cudaError err, const char * const expr, const char * const
     return false;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
 * A cut-down local version of gluErrorString to avoid depending on GLU.
 */
@@ -232,14 +923,172 @@ const char* fghErrorString(GLenum error)
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 __managed__ float* sum_Atb; // m x 1
 __managed__ float* sum_AtA; // m x m, row major
 __managed__ int n;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 template<typename T, int b>
 KERNEL k() {
     assert(false, "problem %d", 5);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #define REDUCE_BLOCK_SIZE 256
@@ -251,7 +1100,17 @@ KERNEL constructAndSolve_device(int n) {
 
     int i = blockDim.x * blockIdx.x + threadIdx.x;
     assert(n == ::n);
-    if (i >= n) return;
+
+    __shared__ float ssum_ai_aiT[REDUCE_BLOCK_SIZE][m][m];// = {0};
+    __shared__ float ssum_ai_bi[REDUCE_BLOCK_SIZE][m];// = {0};
+
+    const int tid = threadIdx.x;
+    if (i >= n) {
+
+        memset(&ssum_ai_aiT[tid], 0, sizeof(float) * m *m);
+        memset(&ssum_ai_bi[tid], 0, sizeof(float) * m);
+        return;
+    }
 
     // Computation
     float ai[m]; /* m x 1 */
@@ -269,12 +1128,8 @@ KERNEL constructAndSolve_device(int n) {
         ai_bi[r] = ai[r] * bi;
 
     // -- Summation ---
-    const int tid = threadIdx.x;
-    
 
     // FAST
-    __shared__ float ssum_ai_aiT[REDUCE_BLOCK_SIZE][m][m];// = {0};
-    __shared__ float ssum_ai_bi[REDUCE_BLOCK_SIZE][m];// = {0};
 
     // TODO could write to these right away
     memcpy(&ssum_ai_aiT[tid], ai_aiT, sizeof(float) * m *m);
@@ -316,12 +1171,31 @@ KERNEL constructAndSolve_device(int n) {
 
     // check
     assert(tid == 0);
+
+    if (blockIdx.x == 1) {
+        printf("\n");
+        for (int r = 0; r < m; r++) {
+            for (int c = 0; c < m; c++) {
+                printf("%.0f ", sum_ai_aiT[c][r]);
+            }
+            printf("\n");
+        }
+
+        printf("-----\n");
+        for (int r = 0; r < m; r++) {
+            for (int c = 0; c < m; c++) {
+                printf("%.0f ", ssum_ai_aiT[0][c][r]);
+            }
+            printf("\n");
+        }
+    }
+
     for (int c = 0; c < m; c++)
         for (int r = 0; r < m; r++)
-            assert(ssum_ai_aiT[0][c][r] == sum_ai_aiT[c][r]);
+            assert(ssum_ai_aiT[0][c][r] == sum_ai_aiT[c][r], "%f %f", ssum_ai_aiT[0][c][r], sum_ai_aiT[c][r]);
 
     for (int r = 0; r < m; r++)
-        assert(ssum_ai_bi[0][r] == sum_ai_bi[r]);
+        assert(ssum_ai_bi[0][r] == sum_ai_bi[r], "%f %f", ssum_ai_bi[0][r], sum_ai_bi[r]);
 
     // Sum globally
     for (int c = 0; c < m; c++)
@@ -332,13 +1206,109 @@ KERNEL constructAndSolve_device(int n) {
         atomicAdd(&sum_Atb[r], ssum_ai_bi[0][r]);
 }
 
-#include <float.h>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 float assertFinite(float value) {
     assert(_fpclass(value) == _FPCLASS_PD || _fpclass(value) == _FPCLASS_PN || _fpclass(value) == _FPCLASS_PZ ||
         _fpclass(value) == _FPCLASS_ND || _fpclass(value) == _FPCLASS_NN || _fpclass(value) == _FPCLASS_NZ
         , "value = %f is not finite", value);
     return value;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class Cholesky
 {
 private:
@@ -346,7 +1316,7 @@ private:
     int size, rank;
 
 public:
-    /// Solve Ax = b for A symmetric & positive-definite of size*size 
+    // Solve Ax = b for A symmetric positive-definite of size*size
     static void solve(const float* mat, int size, const float* b, float* result) {
         Cholesky cholA(mat, size);
         cholA.Backsub(result, b);
@@ -419,14 +1389,119 @@ public:
         }
     }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /** Allocate a block of CUDA memory and memset it to 0 */
 template<typename T> static void zeroManagedMalloc(T*& p, const unsigned int count = 1) {
     cudaSafeCall(cudaMallocManaged(&p, sizeof(T) * count));
     cudaSafeCall(cudaMemset(p, 0, sizeof(T) * count));
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 template<class Constructor, int m>
-float* constructAndSolve(int n) {
+std::array<float, m> constructAndSolve(int n) {
+    assert(m < 100);
     ::n = n;
 
     cudaDeviceSynchronize();
@@ -452,10 +1527,65 @@ float* constructAndSolve(int n) {
     assert(sum_AtA[m+1] != 0);
     assert(sum_Atb[m-1] != 0);
 
-    float* x = new float[m];
-    Cholesky::solve(sum_AtA, m, sum_Atb, x);
+    auto x = std::array < float, m >();
+    Cholesky::solve(sum_AtA, m, sum_Atb, x.data());
     return x;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 struct ConstructExampleEquation {
@@ -464,21 +1594,87 @@ struct ConstructExampleEquation {
         for (int j = 0; j < m; j++) {
             out_ai[j] = 0;
             if (i == j || i == 0|| j== 0)
-                out_ai[j] = i+1;
+                out_ai[j] = 1;
         }
-        out_bi = 7;
+        out_bi = i+1;
     }
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void assertApproxEqual(float a, float b, int considered_initial_bits = 20) {
+    assert(considered_initial_bits > 8 + 1); // should consider at least sign and full exponent
+    assert(considered_initial_bits <= 32);
+
+    unsigned int ai = *(unsigned int*)&a;
+    unsigned int bi = *(unsigned int*)&b;
+    auto ait = ai >> (32 - considered_initial_bits);
+    auto bit = bi >> (32 - considered_initial_bits);
+
+    assert(ait == bit, "%f != %f, %x != %x, %x != %x", 
+        a,b,ai,bi,ait,bit
+        );
+}
+
+struct Trafo {
+    CPU_AND_GPU int operator()(int i) {
+        return 2 * i;
+    }
+};
 int main(int argc, char** argv)
 {
+    const int min = 1, max = 6;
+    thrust::counting_iterator<int> first(min);
+    auto last = first + (max-min) + 1;
+    int res = transform_reduce(first, last, Trafo(), 0, thrust::plus<int>());
+    assert(res == 2 * (max * (max + 1)) / 2);
+
     const int m = 6;
-    int n = m;
-    float* x = constructAndSolve<ConstructExampleEquation, m>(n);
-    float expect[m] = {0.7875, 2.7125, 1.5458333333333334,
-        0.9625, 0.6125, 0.37916666666666665};
+    const int n = 2*REDUCE_BLOCK_SIZE;
+    auto x = constructAndSolve<ConstructExampleEquation, m>(n);
+    float expect[m] = {258.164, -87.2215, -86.2215, -85.2215, -84.2215, -83.2215};
     for (int i = 0; i < m; i++)
-        assert(abs(x[i] - expect[i]) < 0.0001f);
+        assertApproxEqual(x[i], expect[i]);
 
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);

@@ -166,6 +166,9 @@ copy "$(SolutionDir)freeglut\bin\x64\freeglut.dll" "$(SolutionDir)freeglut.dll"<
   <ItemGroup>
     <Text Include="stdouterr.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 7.0.targets" />
