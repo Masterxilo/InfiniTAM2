@@ -28,6 +28,7 @@ using namespace thrust;
 #include <streambuf>
 #include <iostream>
 #include <string>
+#include <exception>
 #include <iterator>
 #include <tchar.h>
 #pragma comment(lib,"cudart")
@@ -84,7 +85,7 @@ using namespace std;
 
 
 
-
+#define TEST(name) void name(); struct T##name {T##name() {name();}} _T##name; void name() 
 
 
 
@@ -184,18 +185,27 @@ cudaSafeCall(cudaDeviceSynchronize()); /* TODO greatly alters the execution orde
 
 
 
-
-
+/// Whether a failed assertion triggers a debugger break.
+__managed__ bool breakOnAssertion = true;
+/// Whenever an assertions fails std::exception is thrown.
+/// No effect in GPU code.
+bool assertionThrowException = false;
+/// Must be reset manually
+__managed__ bool assertionFailed = false;
 
 #undef assert
 #if GPU_CODE
-#define assert(x,commentFormat,...) if(!(x)) {printf("%s(%i) : Assertion failed : %s.\n\tblockIdx %d %d %d, threadIdx %d %d %d\n\t<" commentFormat ">\n", __FILE__, __LINE__, #x, xyz(blockIdx), xyz(threadIdx), __VA_ARGS__); *(int*)0 = 0;/* asm("trap;"); illegal instruction*/} 
+#define assert(x,commentFormat,...) if(!(x)) {printf("%s(%i) : Assertion failed : %s.\n\tblockIdx %d %d %d, threadIdx %d %d %d\n\t<" commentFormat ">\n", __FILE__, __LINE__, #x, xyz(blockIdx), xyz(threadIdx), __VA_ARGS__); assertionFailed = true; if (breakOnAssertion) *(int*)0 = 0;/* asm("trap;"); illegal instruction*/} 
 #else
-#define assert(x,commentFormat,...) if(!(x)) {char s[10000]; sprintf_s(s, "%s(%i) : Assertion failed : %s.\n\t<" commentFormat ">\n", __FILE__, __LINE__, #x, __VA_ARGS__); puts(s); flushStd(); DebugBreak(); OutputDebugStringA("! program continues after failed assertion\n\n");} 
+#define assert(x,commentFormat,...) if(!(x)) {char s[10000]; sprintf_s(s, "%s(%i) : Assertion failed : %s.\n\t<" commentFormat ">\n", __FILE__, __LINE__, #x, __VA_ARGS__); puts(s); flushStd(); assertionFailed = true; if (breakOnAssertion) DebugBreak(); OutputDebugStringA("! program continues after failed assertion\n\n"); if (assertionThrowException) throw std::exception();} 
 #endif
 
 
 
+
+
+#define BEGIN_SHOULD_FAIL() {bool ok = false; assertionThrowException = true; breakOnAssertion = false; try {
+#define END_SHOULD_FAIL() } catch(...) {assertionThrowException = false; breakOnAssertion = true; ok = true;} assert(ok);}
 
 
 
@@ -323,7 +333,7 @@ bool cudaSafeCallImpl(cudaError err, const char * const expr, const char * const
 // The final expression will be 0.
 // Otherwise we evaluate debug break, which returns true as well and then return 0.
 #define cudaSafeCall(err) \
-    !(cudaSafeCallImpl((cudaError)(err), #err, __FILE__, __LINE__) || ([]() {DebugBreak(); return true;})() )
+    !(cudaSafeCallImpl((cudaError)(err), #err, __FILE__, __LINE__) || ([]() {assert(false, "CUDA error"); return true;})() )
 
 
 
@@ -401,6 +411,78 @@ bool cudaSafeCallImpl(cudaError err, const char * const expr, const char * const
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+struct integer {
+private:
+    int value;
+    int assertRange(long long val) {
+        assert(val <= (long long)MAX_INT, "%lld is too big for an int");
+        assert(val >= (long long)MIN_INT, "%lld is too small for an int");
+        return val;
+    }
+public:
+    integer(const int& value) : value(value) {}
+    
+    integer(const long long& value) : value(value) {}
+    
+    // deny:
+    integer(float);
+    integer(double);
+    integer(unsigned int);
+    integer(unsigned long);
+    integer(unsigned long long);
+    integer(long);
+    
+    const integer& operator=(const integer& b) {
+        this->value = b.value;
+    }
+    
+    #define operation(OP) \
+    const integer& operator OP =(integer& b) {\
+        *this = *this OP b;\
+        return *this;\
+    }\
+    \
+    integer operator OP (const integer& b_) {\
+        long long a = this->value;\
+        long long b = b_.value;\
+        long long result = a OP b;\
+        return integer(result);\
+    }
+     
+};
+
+
+struct uinteger {
+
+};
+
+
+TEST(underflow) {
+    BEGIN_SHOULD_FAIL()
+        uinteger x = 0;
+        x--;
+    END_SHOULD_FAIL()
+}
 
 
 
@@ -850,6 +932,7 @@ bool cudaSafeCallImpl(cudaError err, const char * const expr, const char * const
 
 
     flushStd();
+    
     return false;
 }
 
